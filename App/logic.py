@@ -1,30 +1,225 @@
 import time
+import sys
+import os
+import csv
+from datetime import datetime
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from DataStructures.List import array_list as al
+from DataStructures.List.list_iterator import iterator
+from DataStructures.Map import map_separate_chaining as sc
+
+data_dir = os.path.dirname(os.path.realpath('__file__')) + '/Data/'
+
+csv.field_size_limit(2147483647)
 
 def new_logic():
     """
     Crea el catalogo para almacenar las estructuras de datos
     """
     #TODO: Llama a las funciónes de creación de las estructuras de datos
-    pass
-
+    catalog = {'agricultural_records' : sc.new_map(1000000,2.5)}
+    return catalog
 
 # Funciones para la carga de datos
-
 def load_data(catalog, filename):
     """
     Carga los datos del reto
     """
     # TODO: Realizar la carga de datos
-    pass
+    star_time = get_time()
+    records = catalog['agricultural_records']
+    file_path = data_dir + filename
+    with open(file_path, encoding='utf-8') as file:
+        input_file = csv.DictReader(file)
+        i = 1
+        for row in input_file:
+            row['year_collection'] = int(row['year_collection'])
+            sc.put(records, str(i) + ',' + row['load_time'], row)
+            i += 1
+    records_retorno = al.merge_sort(sc.value_set(records), sort_criteria_1)
+    end_time = get_time()
+    time = delta_time(star_time, end_time)
+    return round(time,3), sc.size(records), get_min_year(catalog), get_max_year(catalog), get_first_last_info(records_retorno, 'carga_datos')
+
+def get_min_year(catalog):
+    """
+    Retorna el menor año de recolección encontrado en la lista de registros.
+    """
+    lowest = float('inf')
+    for i in iterator(sc.value_set(catalog['agricultural_records'])):
+        if i['year_collection'] < lowest:
+            lowest = i['year_collection']
+    return lowest
+
+def get_max_year(catalog):
+    """
+    Retorna el mayor año de recolección encontrado en la lista de registros.
+    """
+    lowest = float('-inf')
+    for i in iterator(sc.value_set(catalog['agricultural_records'])):
+        if i['year_collection'] > lowest:
+            lowest = i['year_collection']
+    return lowest
+
+def sort_criteria_1(element_1, element_2):
+    is_sorted = False
+    fecha_element_1 = datetime.strptime(element_1['load_time'], '%Y-%m-%d %H:%M:%S')
+    fecha_element_2 = datetime.strptime(element_2['load_time'], '%Y-%m-%d %H:%M:%S')
+    if fecha_element_1 > fecha_element_2:
+        is_sorted = True
+    if fecha_element_1 == fecha_element_2:
+        if element_1['state_name'] <= element_2['state_name']:
+            is_sorted = True
+    return is_sorted
+
+
+def extract_info(record, requerimiento):
+    if requerimiento == "carga_datos":
+        return {
+            'year_collection': record['year_collection'],
+            'load_time': record['load_time'],
+            'state_name': record['state_name'],
+            'source': record['source'],
+            'unit_measurement': record['unit_measurement'],
+            'value': record['value']
+        }
+    elif requerimiento == "req_1":
+        dt = datetime.strptime(record['load_time'], "%Y-%m-%d %H:%M:%S")
+        return {
+            'year_collection': record['year_collection'],
+            'load_time': dt.strftime("%Y-%m-%d"),
+            'source': record['source'],
+            'freq_collection': record['freq_collection'],
+            'state_name': record['state_name'],
+            'commodity': record['commodity'],
+            'unit_measurement': record['unit_measurement'],
+            'value': record['value']
+        }
+    elif requerimiento ==  "req_2":
+        dt = datetime.strptime(record['load_time'], "%Y-%m-%d %H:%M:%S")
+        return {
+            'year_collection': record['year_collection'],
+            'load_time': dt.strftime("%Y-%m-%d"),
+            'source': record['source'],
+            'freq_collection': record['freq_collection'],
+            'state_name': record['state_name'],
+            'commodity': record['commodity'],
+            'unit_measurement': record['unit_measurement'],
+            'value': record['value']
+        }
+    elif requerimiento == "req_3":
+        dt = datetime.strptime(record['load_time'], "%Y-%m-%d %H:%M:%S")
+        return {
+            'source': record['source'],
+            'year_collection': record['year_collection'],
+            'load_time': dt.strftime("%Y-%m-%d"),
+            'freq_collection': record['freq_collection'],
+            'commodity': record['commodity'],
+            'unit_measurement': record['unit_measurement']
+        }
+    elif requerimiento == "req_4":
+        dt = datetime.strptime(record['load_time'], "%Y-%m-%d %H:%M:%S")
+        return {
+            'source': record['source'],
+            'year_collection': record['year_collection'],
+            'load_time': dt.strftime("%Y-%m-%d"),
+            'freq_collection': record['freq_collection'],
+            'state_name': record['state_name'],
+            'unit_measurement': record['unit_measurement']
+        }
+    elif requerimiento == "req_5":
+        dt = datetime.strptime(record['load_time'], "%Y-%m-%d %H:%M:%S")
+        return {
+            'source': record['source'],
+            'year_collection': record['year_collection'],
+            'load_time': dt.strftime("%Y-%m-%d"),
+            'freq_collection': record['freq_collection'],
+            'state_name': record['state_name'],
+            'unit_measurement': record['unit_measurement'],
+            'commodity': record['commodity'],
+        }
+    elif requerimiento == "req_6":
+        dt = datetime.strptime(record['load_time'], "%Y-%m-%d %H:%M:%S")
+        return {
+            'source': record['source'],
+            'year_collection': record['year_collection'],
+            'load_time': dt.strftime("%Y-%m-%d"),
+            'freq_collection': record['freq_collection'],
+            'state_name': record['state_name'],
+            'unit_measurement': record['unit_measurement'],
+            'commodity': record['commodity']
+        }
+    return record
+            
+def get_first_last_info(records_list, requerimiento):
+    """
+    Retorna una nueva lista (del mismo tipo que la original) que contiene los primeros 5 y 
+    los últimos 5 registros con la siguiente información:
+      - year_collection: Año de recolección.
+      - load_time: Fecha de carga del registro.
+      - state_name: Nombre del departamento.
+      - source: Fuente/origen (ej. "CENSUS" o "SURVEY").
+      - unit_measurement: Unidad de medición (ej. "HEAD", "$", etc.).
+      - value: Valor de la medición.
+    
+    Si la lista original tiene 10 o menos registros, se retornan todos.    
+    """
+    total = al.size(records_list)
+    new_list_ret = al.new_list()
+            
+    if total <= 20:
+        for i in range(total):
+            rec = al.get_element(records_list, i)
+            al.add_last(new_list_ret, extract_info(rec, requerimiento))
+    else:
+        for i in range(5):
+            rec = al.get_element(records_list, i)
+            al.add_last(new_list_ret, extract_info(rec, requerimiento))
+        for i in range(total - 5, total):
+            rec = al.get_element(records_list, i)
+            al.add_last(new_list_ret, extract_info(rec, requerimiento))
+    return new_list_ret
 
 # Funciones de consulta sobre el catálogo
+def filtrar_por_año(records_lista, anio_inicial, anio_final):
+    lista = al.new_list()
+    for registro in iterator(records_lista):
+        if anio_inicial <= registro['year_collection'] <= anio_final:
+            al.add_last(lista, registro)
+    return lista
 
-def get_data(catalog, id):
-    """
-    Retorna un dato por su ID.
-    """
-    #TODO: Consulta en las Llamar la función del modelo para obtener un dato
-    pass
+def filtrar_por_fecha(records_lista, fecha_inicial, fecha_final):
+    lista = al.new_list()
+    fecha_i = datetime.strptime(fecha_inicial + " 00:00:00", "%Y-%m-%d %H:%M:%S")
+    fecha_f = datetime.strptime(fecha_final + " 23:59:59", "%Y-%m-%d %H:%M:%S")
+    for registro in iterator(records_lista):
+        fecha_r = datetime.strptime(registro['load_time'], "%Y-%m-%d %H:%M:%S")
+        if fecha_i <= fecha_r <= fecha_f:
+            al.add_last(lista, registro)
+    return lista
+
+def filtrar_por_departamento(records_lista, departamento):
+    lista = al.new_list()
+    for registro in iterator(records_lista):
+        if registro['state_name'] == departamento:
+            al.add_last(lista, registro)
+    return lista
+
+def filtrar_por_producto(records_lista, producto):
+    lista = al.new_list()
+    for registro in iterator(records_lista):
+        if registro['commodity'] == producto:
+            al.add_last(lista, registro)
+    return lista
+
+def filtrar_por_categoria_estadistica(records_lista, categoria):
+    lista = al.new_list()
+    for registro in iterator(records_lista):
+        if registro['statical_category'] == categoria:
+            al.add_last(lista, registro)
+    return lista
 
 
 def req_1(catalog):
@@ -91,7 +286,6 @@ def req_8(catalog):
 
 
 # Funciones para medir tiempos de ejecucion
-
 def get_time():
     """
     devuelve el instante tiempo de procesamiento en milisegundos

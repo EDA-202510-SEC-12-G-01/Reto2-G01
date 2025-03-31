@@ -1,12 +1,18 @@
 import sys
+import os
+import tabulate as tb
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from DataStructures.List.list_iterator import iterator
+from App import logic
 
 def new_logic():
     """
         Se crea una instancia del controlador
     """
     #TODO: Llamar la función de la lógica donde se crean las estructuras de datos
-    pass
+    return logic.new_logic()
 
 def print_menu():
     print("Bienvenido")
@@ -21,12 +27,22 @@ def print_menu():
     print("9- Ejecutar Requerimiento 8 (Bono)")
     print("0- Salir")
 
-def load_data(control):
+def load_data(control, archivo):
     """
     Carga los datos
     """
     #TODO: Realizar la carga de datos
-    pass
+    time, size, menor_anio, mayor_anio, records_recortado = logic.load_data(control, archivo)
+    print()
+    print("INICIANDO LA CARGA DE DATOS")
+    print("========================================================================================================")
+    print("SE CARGARON LOS DATOS CORRECTAMENTE")
+    print("Tiempo de ejecución en ms: ", time)
+    print("Cantidad de registros cargados: ", size)
+    print("Año más antiguo de recolección de registros: ", menor_anio)
+    print("Año más reciente de recolección de registros: ", mayor_anio)
+    print(tb.tabulate(iterator(records_recortado), headers= 'keys' , tablefmt= "fancy_grid"))
+    print()
 
 
 def print_data(control, id):
@@ -113,9 +129,11 @@ def main():
     while working:
         print_menu()
         inputs = input('Seleccione una opción para continuar\n')
+        
         if int(inputs) == 1:
             print("Cargando información de los archivos ....\n")
-            data = load_data(control)
+            archivo = seleccionar_archivo()
+            data = load_data(control, archivo)
         elif int(inputs) == 2:
             print_req_1(control)
 
@@ -146,3 +164,25 @@ def main():
         else:
             print("Opción errónea, vuelva a elegir.\n")
     sys.exit(0)
+
+def seleccionar_archivo():
+    print("Escoja el archivo a cargar")
+    print("1- agricultural-20.csv")
+    print("2- agricultural-40.csv")
+    print("3- agricultural-60.csv")
+    print("4- agricultural-80.csv")
+    print("5- agricultural-100.csv")
+    inputs = input('Seleccione una opción para continuar\n')
+    if int(inputs) == 1:
+        return "/agricultural-20.csv"
+    elif int(inputs) == 2:
+        return "/agricultural-40.csv"
+    elif int(inputs) == 3:
+        return "/agricultural-60.csv"
+    elif int(inputs) == 4:
+        return "/agricultural-80.csv"
+    elif int(inputs) == 5:
+        return "/agricultural-100.csv"
+    else:
+        print("Opción errónea, vuelva a elegir.\n")
+        seleccionar_archivo()
