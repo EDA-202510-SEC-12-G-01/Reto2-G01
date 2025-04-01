@@ -6,6 +6,9 @@ from datetime import datetime
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+default_limit=1000000
+sys.setrecursionlimit(default_limit*10)
+
 from DataStructures.List import array_list as al
 from DataStructures.List.list_iterator import iterator
 from DataStructures.Map import map_separate_chaining as sc
@@ -222,13 +225,25 @@ def filtrar_por_categoria_estadistica(records_lista, categoria):
     return lista
 
 
-def req_1(catalog):
+def req_1(catalog, anio):
     """
     Retorna el resultado del requerimiento 1
     """
     # TODO: Modificar el requerimiento 1
-    pass
-
+    star_time = get_time()
+    records = catalog["agricultural_records"]
+    records_lista = sc.value_set(records)
+    records_filtrado = filtrar_por_año(records_lista, anio, anio)
+    maxima_fecha_carga = float('-inf')
+    record_mas_reciente = None
+    for i in iterator(records_filtrado):
+        dt = datetime.strptime(i["load_time"], "%Y-%m-%d %H:%M:%S").timestamp()
+        if maxima_fecha_carga < dt:
+            maxima_fecha_carga = dt
+            record_mas_reciente = i
+    end_time = get_time()
+    time = delta_time(star_time, end_time)
+    return round(time, 3), al.size(records_filtrado), extract_info(record_mas_reciente, "req_1")
 
 def req_2(catalog):
     """
@@ -238,13 +253,27 @@ def req_2(catalog):
     pass
 
 
-def req_3(catalog):
+def req_3(catalog, departamento, anio_inicial, anio_final):
     """
     Retorna el resultado del requerimiento 3
     """
     # TODO: Modificar el requerimiento 3
-    pass
-
+    start = get_time()
+    records = catalog['agricultural_records']
+    records_lista = sc.value_set(records)
+    records_filtrado = filtrar_por_año(records_lista, anio_inicial, anio_final)
+    records_filtrado = filtrar_por_departamento(records_filtrado, departamento)
+    num_surveys = 0
+    num_census = 0
+    for record in iterator(records_filtrado):
+        if record['source'] == 'SURVEY':
+            num_surveys += 1
+        elif record['source'] == 'CENSUS':
+            num_census += 1
+    records_retorno = al.merge_sort(records_filtrado, sort_criteria_1)
+    end = get_time()
+    elapsed = delta_time(start, end)
+    return round(elapsed, 3), al.size(records_filtrado), num_surveys, num_census, get_first_last_info(records_retorno, "req_3")
 
 def req_4(catalog):
     """

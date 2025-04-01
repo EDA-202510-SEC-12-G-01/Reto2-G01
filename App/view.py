@@ -2,6 +2,9 @@ import sys
 import os
 import tabulate as tb
 
+default_limit=100000
+sys.setrecursionlimit(default_limit*10)
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from DataStructures.List.list_iterator import iterator
