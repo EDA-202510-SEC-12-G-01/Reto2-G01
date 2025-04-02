@@ -9,6 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from DataStructures.List.list_iterator import iterator
 from App import logic
+from DataStructures.List import array_list as al
 
 def new_logic():
     """
@@ -55,12 +56,13 @@ def print_data(control, id):
     #TODO: Realizar la función para imprimir un elemento
     pass
 
-def print_req_1(control):
-    """
-        Función que imprime la solución del Requerimiento 1 en consola
-    """
-    # TODO: Imprimir el resultado del requerimiento 1
-    pass
+def print_req_1(catalog, anio):
+    tiempo, numero_registros, info = logic.req_1(catalog, anio)
+    print(f"Requerimiento 1 - Año: {anio}")
+    print(f"Tiempo de ejecución: {tiempo} segundos")
+    print(f"Número de registros filtrados: {numero_registros}")
+    print("Información del registro más reciente:")
+    print(info)
 
 
 def print_req_2(control):
@@ -79,12 +81,23 @@ def print_req_3(control):
     pass
 
 
-def print_req_4(control):
-    """
-        Función que imprime la solución del Requerimiento 4 en consola
-    """
-    # TODO: Imprimir el resultado del requerimiento 4
-    pass
+def print_req_4(catalog, tipo_producto, año_inicio, año_fin):
+    resultado = logic.req_4_consultar_registros_por_producto_y_rango(catalog, tipo_producto, año_inicio, año_fin)
+    print(f"Información sobre los registros filtrados por producto '{tipo_producto}' y rango de años {año_inicio}-{año_fin}:")
+    print(f"Total de registros: {resultado['total_registros']}")
+    print("Registros por fuente:")
+    for fuente, count in resultado['registros_por_fuente'].items():
+        print(f"  {fuente}: {count}")
+    print(f"Tiempo total de procesamiento: {resultado['tiempo_total']} segundos")
+    print("\nPrimeros y últimos registros:")
+    if 'registros' in resultado:
+        print("\nPrimeros 10 registros:")
+        for i, registro in enumerate(resultado['registros'][:10]):
+            print(f"{i+1}. {registro}")
+        print("\nÚltimos 10 registros:")
+        for i, registro in enumerate(resultado['registros'][-10:]):
+            print(f"{i+1}. {registro}")
+
 
 
 def print_req_5(control):
@@ -138,7 +151,8 @@ def main():
             archivo = seleccionar_archivo()
             data = load_data(control, archivo)
         elif int(inputs) == 2:
-            print_req_1(control)
+            anio = int(input ("Ingrese el año de interes: \n"))
+            print_req_1(control,anio)
 
         elif int(inputs) == 3:
             print_req_2(control)
@@ -147,7 +161,11 @@ def main():
             print_req_3(control)
 
         elif int(inputs) == 5:
-            print_req_4(control)
+            tipo_producto = (input ("Ingrese el tipo de producto: \n"))
+            año_inicio = int(input ("Ingrese el año de inicio: \n"))
+            año_fin = int(input ("Ingrese el año de final: \n"))
+            print_req_4(control, tipo_producto, año_inicio, año_fin)
+
 
         elif int(inputs) == 6:
             print_req_5(control)

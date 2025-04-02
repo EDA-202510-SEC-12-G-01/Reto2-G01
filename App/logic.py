@@ -279,7 +279,9 @@ def req_4_consultar_registros_por_producto_y_rango(catalog, tipo_producto, año_
     start_time = get_time()
     registros_filtrados = filtrar_por_producto(catalog['agricultural_records'], tipo_producto)
     registros_filtrados = filtrar_por_año(registros_filtrados, año_inicio, año_fin)
-    registros_filtrados = al.merge_sort(registros_filtrados, sort_criteria_1)
+    def sort_by_load_time_desc(record1, record2):
+        return datetime.strptime(record1['load_time'], "%Y-%m-%d %H:%M:%S") > datetime.strptime(record2['load_time'], "%Y-%m-%d %H:%M:%S")
+    registros_filtrados = al.quick_sort(registros_filtrados, sort_by_load_time_desc)
     if al.size(registros_filtrados) > 20:
         registros_filtrados = get_first_last_info(registros_filtrados, 'req_4')
     survey_count = 0
@@ -297,9 +299,9 @@ def req_4_consultar_registros_por_producto_y_rango(catalog, tipo_producto, año_
             'SURVEY': survey_count,
             'CENSUS': census_count
         },
-        'tiempo_total': tiempo_total
+        'tiempo_total': tiempo_total,
+        'registros': registros_filtrados
     }
-
 
 
 def req_5(catalog):
