@@ -150,12 +150,54 @@ def print_req_7(control):
     print(tb.tabulate(iterator(records), headers= 'keys' , tablefmt= "fancy_grid"))
     print()
 
-def print_req_8(control):
+def print_req_8(control, N, orden):
     """
         Función que imprime la solución del Requerimiento 8 en consola
     """
     # TODO: Imprimir el resultado del requerimiento 8
-    pass
+        # Llamamos a la función req_8_analizar_tiempos_de_carga con los parámetros necesarios
+    resultado = logic.req_8_analizar_tiempos_de_carga(control, N, orden)
+    
+    # Imprimimos el tiempo de ejecución y la información general de los departamentos
+    print()
+    print("========================================================================================================")
+    print(f"Tiempo de ejecución en ms: {resultado['Tiempo de ejecución (ms)']}")
+    print(f"Número total de departamentos: {resultado['Número total de departamentos']}")
+    print(f"Tiempo promedio de carga: {resultado['Tiempo promedio de carga']} ms")
+    print(f"Menor año de recopilación: {resultado['Menor año de recopilación']}")
+    print(f"Mayor año de recopilación: {resultado['Mayor año de recopilación']}")
+    
+    print(f"Total 'SURVEY': {resultado['Total \"SURVEY\"']}")
+    print(f"Total 'CENSUS': {resultado['Total \"CENSUS\"']}")
+    
+    print("========================================================================================================")
+    print("RESUMEN DE DEPARTAMENTOS:")
+    
+    # Imprimimos los departamentos en un formato tabular similar
+    headers = ["Departamento", "Promedio tiempo de carga (ms)", "Número de registros", 
+               "Menor año de recopilación", "Mayor año de recopilación", 
+               "Menor tiempo de carga (años)", "Mayor tiempo de carga (años)", 
+               "Total 'SURVEY'", "Total 'CENSUS'"]
+    
+    # Usamos tabulate para imprimir los datos de los departamentos
+    departments_data = []
+    for dep in resultado['Departamentos']:
+        departments_data.append([
+            dep['Departamento'],
+            dep['Promedio tiempo de carga'],
+            dep['Número de registros'],
+            dep['Menor año de recopilación'],
+            dep['Mayor año de recopilación'],
+            dep['Menor tiempo de carga'],
+            dep['Mayor tiempo de carga'],
+            dep['Total "SURVEY"'],
+            dep['Total "CENSUS"']
+        ])
+    
+    # Mostrar la tabla con formato
+    print(tb.tabulate(departments_data, headers=headers, tablefmt="fancy_grid"))
+    print("========================================================================================================")
+
 
 
 # Se crea la lógica asociado a la vista
@@ -198,7 +240,9 @@ def main():
             print_req_7(control)
 
         elif int(inputs) == 9:
-            print_req_8(control)
+            N = input ("Ingrese el numero de registros a listar: \n")
+            orden = input ("Ingrese orden (ASCENDENTE o DESCENDETE): \n")
+            print_req_8(control, N, orden)
 
         elif int(inputs) == 0:
             working = False

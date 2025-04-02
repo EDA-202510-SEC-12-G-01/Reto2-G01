@@ -408,12 +408,21 @@ def req_7(catalog, departamento, anio_inicial, anio_final, tipo_ordenamiento):
     return round(time, 3), al.size(records_filtrado), get_first_last_info(records_retorno, "req_7", 15)
 
 def req_8_analizar_tiempos_de_carga(catalog, N, orden):
-    start_time = get_time() 
+    # Asegurando que N sea un entero
+    N = int(N)
+    # Inicia el conteo del tiempo de ejecución
+    start_time = get_time()
+    # Extrae los registros agrícolas
+    records = catalog['agricultural_records']
+    records_lista = sc.value_set(records)  # Convierte a una lista de ArrayList
+    # Filtra los registros válidos (que no sean 'D' en la unidad de medición)
     registros_validos = al.new_list()
-    for record in iterator(catalog['agricultural_records']):
+    for record in iterator(records_lista):
         if record['unit_measurement'] != 'D': 
             al.add_last(registros_validos, record)
+    # Inicializa una lista de departamentos
     departamentos = al.new_list()
+    # Procesa los registros válidos para obtener la información de cada departamento
     for record in iterator(registros_validos):
         dep_info = {
             'state_name': record['state_name'],
@@ -427,7 +436,13 @@ def req_8_analizar_tiempos_de_carga(catalog, N, orden):
             'survey_count': 0,
             'census_count': 0
         }
-        dep_found = al.is_present(departamentos, dep_info, al.default_function)
+        # Verifica si el departamento ya existe en la lista
+        dep_found = -1
+        for i, dep in enumerate(iterator(departamentos)):
+            if dep['state_name'] == dep_info['state_name']:
+                dep_found = i
+                break
+
         if dep_found == -1:
             al.add_last(departamentos, dep_info)
         else:
@@ -442,6 +457,7 @@ def req_8_analizar_tiempos_de_carga(catalog, N, orden):
                 dep['survey_count'] += 1
             if record['source'] == 'CENSUS':
                 dep['census_count'] += 1
+    # Calcula el tiempo promedio de carga por departamento
     for dep in iterator(departamentos):
         total_time = 0
         count = 0
@@ -450,6 +466,7 @@ def req_8_analizar_tiempos_de_carga(catalog, N, orden):
                 total_time += (record['year_collection'] - int(record['load_time'][:4])) 
                 count += 1
         dep['promedio_tiempo'] = total_time / count if count > 0 else 0
+    # Ordena los departamentos según el promedio de tiempo de carga
     departamentos_ordenados = al.new_list()
     for dep in iterator(departamentos):
         al.add_last(departamentos_ordenados, dep)
@@ -457,15 +474,19 @@ def req_8_analizar_tiempos_de_carga(catalog, N, orden):
         departamentos_ordenados = al.merge_sort(departamentos_ordenados, lambda a, b: a['promedio_tiempo'] < b['promedio_tiempo'])
     else:
         departamentos_ordenados = al.merge_sort(departamentos_ordenados, lambda a, b: a['promedio_tiempo'] > b['promedio_tiempo'])
+    # Si hay más de 15 departamentos, recorta la lista a los primeros N y últimos N
     total_departamentos = al.size(departamentos_ordenados)
     if total_departamentos > 15:
         departamentos_ordenados = al.sub_list(departamentos_ordenados, 0, N)
         departamentos_ordenados = al.add_last(departamentos_ordenados, al.sub_list(departamentos_ordenados, total_departamentos - N, total_departamentos))
+    # Calcula el tiempo promedio total
     count_departamentos = al.size(departamentos_ordenados)
     tiempo_total = sum([dep['promedio_tiempo'] for dep in iterator(departamentos_ordenados)])
     tiempo_promedio_total = tiempo_total / count_departamentos if count_departamentos > 0 else 0
+    # Obtiene el menor y mayor año de recopilación
     menor_año = min([dep['min_year'] for dep in iterator(departamentos_ordenados)], default=float('inf'))
     mayor_año = max([dep['max_year'] for dep in iterator(departamentos_ordenados)], default=float('-inf'))
+    # Crea el diccionario de resultados
     resultado = {
         'Tiempo de ejecución (ms)': round(delta_time(start_time, get_time()), 3),
         'Número total de departamentos': count_departamentos,
@@ -476,6 +497,7 @@ def req_8_analizar_tiempos_de_carga(catalog, N, orden):
         'Total "SURVEY"': sum([dep['survey_count'] for dep in iterator(departamentos_ordenados)]),
         'Total "CENSUS"': sum([dep['census_count'] for dep in iterator(departamentos_ordenados)]),
     }
+    # Añade los detalles de cada departamento al resultado
     for dep in iterator(departamentos_ordenados):
         dep_info = {
             'Departamento': dep['state_name'],
