@@ -224,6 +224,12 @@ def filtrar_por_categoria_estadistica(records_lista, categoria):
             al.add_last(lista, registro)
     return lista
 
+def filtrar_por_unidad_de_medida(records):
+    lista = al.new_list()
+    for registro in iterator(records):
+        if "$" in registro['unit_measurement']:
+            al.add_last(lista, registro)
+    return lista
 
 def req_1(catalog, anio):
     """
@@ -277,8 +283,9 @@ def req_3(catalog, departamento, anio_inicial, anio_final):
 
 def req_4(catalog, tipo_producto, anio_inicio, anio_fin):
     """
-    Retorna el resultado del requerimiento 5
+    Retorna el resultado del requerimiento 4
     """
+    # TODO: Modificar el requerimiento 4
     start_time = get_time()
     records = catalog['agricultural_records']
     records_lista = sc.value_set(records)
@@ -303,21 +310,41 @@ def req_5(catalog):
     # TODO: Modificar el requerimiento 5
     pass
 
-def req_6(catalog):
+def req_6(catalog, departamento_interes, fecha_inicio, fecha_fin):
     """
     Retorna el resultado del requerimiento 6
     """
     # TODO: Modificar el requerimiento 6
-    pass
+    star_time = get_time()
+    records = catalog['agricultural_records']
+    records_lista = sc.value_set(records)
+    records_filtrado = filtrar_por_departamento(records_lista, departamento_interes)
+    records_filtrado = filtrar_por_fecha(records_filtrado, fecha_inicio, fecha_fin)
+    num_surveys = 0
+    num_census = 0
+    for record in iterator(records_filtrado):
+        if record['source'] == 'SURVEY':
+            num_surveys += 1
+        elif record['source'] == 'CENSUS':
+            num_census += 1
+    records_retorno = al.merge_sort(records_filtrado, sort_criteria_1)
+    end_time = get_time()
+    time = delta_time(star_time, end_time)
+    return round(time, 3), al.size(records_filtrado), num_surveys, num_census, get_first_last_info(records_retorno, "req_6")
 
 
 def req_7_analizar_ingresos_por_departamento(catalog, departamento, anio_inicial, anio_final, tipo_ordenamiento):
+    """
+    Retorna el resultado del requerimiento 7
+    """
+    # TODO: Modificar el requerimiento 7
     star_time = get_time()
     records = catalog['agricultural_records']
     records_lista = sc.value_set(records)
     records_filtrado = filtrar_por_departamento(records_filtrado, departamento)
     records_filtrado = filtrar_por_año(records_lista, anio_inicial, anio_final)
-    
+    records_filtrado = filtrar_por_unidad_de_medida(records_filtrado)
+    #TODO Completar Requerimiento 7
     end_time = get_time()
     time = delta_time(star_time, end_time)
     return round(time, 3), al.size(records_filtrado), 
