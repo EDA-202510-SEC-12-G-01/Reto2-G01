@@ -49,15 +49,20 @@ def load_data(control, archivo):
     print()
 
 def print_req_1(control):
-    departamento = input("Ingrese el departamento a buscar: ")
-    time, size, record_formateado = logic.req_2(control, departamento)
+    """
+        Función que imprime la solución del Requerimiento 1 en consola
+    """
+    # TODO: Imprimir el resultado del requerimiento 1
+    anio = int(input("Ingrese el año a buscar: "))
+    time, size, record_formateado = logic.req_1(control, anio)
     print()
     print("========================================================================================================")
     print("Tiempo de ejecución en ms: ", time)
-    print(f"Cantidad de registros encontrados en el departamento {departamento}: ", size)
+    print(f"Cantidad de registros encontrados en el año {anio}: ", size)
     print("ULTIMO REGISTRO RECOPILADO")
     print(tb.tabulate([record_formateado], headers= 'keys' , tablefmt= "fancy_grid"))
     print()
+
 
 
 def print_req_2(control):
