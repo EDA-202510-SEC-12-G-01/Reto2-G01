@@ -57,12 +57,15 @@ def print_data(control, id):
     pass
 
 def print_req_1(catalog, anio):
-    tiempo, numero_registros, info = logic.req_1(catalog, anio)
-    print(f"Requerimiento 1 - Año: {anio}")
-    print(f"Tiempo de ejecución: {tiempo} segundos")
-    print(f"Número de registros filtrados: {numero_registros}")
-    print("Información del registro más reciente:")
-    print(info)
+    departamento = input("Ingrese el departamento a buscar: ")
+    time, size, record_formateado = logic.req_2(control, departamento)
+    print()
+    print("========================================================================================================")
+    print("Tiempo de ejecución en ms: ", time)
+    print(f"Cantidad de registros encontrados en el departamento {departamento}: ", size)
+    print("ULTIMO REGISTRO RECOPILADO")
+    print(tb.tabulate([record_formateado], headers= 'keys' , tablefmt= "fancy_grid"))
+    print()
 
 
 def print_req_2(control):
@@ -78,25 +81,35 @@ def print_req_3(control):
         Función que imprime la solución del Requerimiento 3 en consola
     """
     # TODO: Imprimir el resultado del requerimiento 3
-    pass
+    departamento = input("Ingrese el departamento a buscar: ")
+    anio_i = int(input("Ingrese el año inicial del periodo a consultar: "))
+    anio_f = int(input("Ingrese el año final del periodo a consultar: "))
+    time, size, num_surveys, num_census, records_return = logic.req_3(control, departamento, anio_i, anio_f)
+    print()
+    print("========================================================================================================")
+    print("Tiempo de ejecución en ms: ", time)
+    print(f"Cantidad de registros encontrados en el departamento {departamento} entre los años {anio_i} y {anio_f}: ", size)
+    print(f"Cantidad de registros de tipo 'SURVEY' encontrados en el departamento {departamento} entre los años {anio_i} y {anio_f}: ", num_surveys)
+    print(f"Cantidad de registros de tipo 'CENSUS' encontrados en el departamento {departamento} entre los años {anio_i} y {anio_f}: ", num_census)
+    print("RESUMEN DE REGISTROS ENCONTRADOS")
+    print(tb.tabulate(iterator(records_return), headers= 'keys' , tablefmt= "fancy_grid"))
+    print()
 
 
-def print_req_4(catalog, tipo_producto, año_inicio, año_fin):
-    resultado = logic.req_4_consultar_registros_por_producto_y_rango(catalog, tipo_producto, año_inicio, año_fin)
-    print(f"Información sobre los registros filtrados por producto '{tipo_producto}' y rango de años {año_inicio}-{año_fin}:")
-    print(f"Total de registros: {resultado['total_registros']}")
-    print("Registros por fuente:")
-    for fuente, count in resultado['registros_por_fuente'].items():
-        print(f"  {fuente}: {count}")
-    print(f"Tiempo total de procesamiento: {resultado['tiempo_total']} segundos")
-    print("\nPrimeros y últimos registros:")
-    if 'registros' in resultado:
-        print("\nPrimeros 10 registros:")
-        for i, registro in enumerate(resultado['registros'][:10]):
-            print(f"{i+1}. {registro}")
-        print("\nÚltimos 10 registros:")
-        for i, registro in enumerate(resultado['registros'][-10:]):
-            print(f"{i+1}. {registro}")
+def print_req_4(catalog):
+    producto = input("Ingrese el producto a buscar: ")
+    anio_i = int(input("Ingrese el año inicial del periodo a consultar: "))
+    anio_f = int(input("Ingrese el año final del periodo a consultar: "))
+    time, size, num_surveys, num_census, records_return = logic.req_4(control, producto, anio_i, anio_f)
+    print()
+    print("========================================================================================================")
+    print("Tiempo de ejecución en ms: ", time)
+    print(f"Cantidad de registros encontrados en el producto {producto} entre los años {anio_i} y {anio_f}: ", size)
+    print(f"Cantidad de registros de tipo 'SURVEY' encontrados en el producto {producto} entre los años {anio_i} y {anio_f}: ", num_surveys)
+    print(f"Cantidad de registros de tipo 'CENSUS' encontrados en el producto {producto} entre los años {anio_i} y {anio_f}: ", num_census)
+    print("RESUMEN DE REGISTROS ENCONTRADOS")
+    print(tb.tabulate(iterator(records_return), headers= 'keys' , tablefmt= "fancy_grid"))
+    print()
 
 
 
@@ -113,7 +126,19 @@ def print_req_6(control):
         Función que imprime la solución del Requerimiento 6 en consola
     """
     # TODO: Imprimir el resultado del requerimiento 6
-    pass
+    departamento = input("Ingrese el departamento a buscar: ")
+    fecha_i = input('Ingrese la fecha inicial del periodo a consultar (con formato "%Y-%m-%d"): ')
+    fecha_f = input('Ingrese la fecha final del periodo a consultar (con formato "%Y-%m-%d"): ')
+    time, size, num_surveys, num_census, records_return = logic.req_6(control, departamento, fecha_i, fecha_f)
+    print()
+    print("========================================================================================================")
+    print("Tiempo de ejecución en ms: ", time)
+    print(f"Cantidad de registros encontrados en el departamento {departamento} entre las fechas {fecha_i} y {fecha_f}: ", size)
+    print(f"Cantidad de registros de tipo 'SURVEY' encontrados en el departamento {departamento} entre las fechas {fecha_i} y {fecha_f}: ", num_surveys)
+    print(f"Cantidad de registros de tipo 'CENSUS' encontrados en el departamento {departamento} entre las fechas {fecha_i} y {fecha_f}: ", num_census)
+    print("RESUMEN DE REGISTROS ENCONTRADOS")
+    print(tb.tabulate(iterator(records_return), headers= 'keys' , tablefmt= "fancy_grid"))
+    print()
 
 
 def print_req_7(control):
@@ -161,11 +186,7 @@ def main():
             print_req_3(control)
 
         elif int(inputs) == 5:
-            tipo_producto = (input ("Ingrese el tipo de producto: \n"))
-            año_inicio = int(input ("Ingrese el año de inicio: \n"))
-            año_fin = int(input ("Ingrese el año de final: \n"))
-            print_req_4(control, tipo_producto, año_inicio, año_fin)
-
+            print_req_4(control)
 
         elif int(inputs) == 6:
             print_req_5(control)

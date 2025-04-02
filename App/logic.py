@@ -258,7 +258,7 @@ def req_3(catalog, departamento, anio_inicial, anio_final):
     Retorna el resultado del requerimiento 3
     """
     # TODO: Modificar el requerimiento 3
-    start = get_time()
+    star_time = get_time()
     records = catalog['agricultural_records']
     records_lista = sc.value_set(records)
     records_filtrado = filtrar_por_año(records_lista, anio_inicial, anio_final)
@@ -271,38 +271,30 @@ def req_3(catalog, departamento, anio_inicial, anio_final):
         elif record['source'] == 'CENSUS':
             num_census += 1
     records_retorno = al.merge_sort(records_filtrado, sort_criteria_1)
-    end = get_time()
-    elapsed = delta_time(start, end)
-    return round(elapsed, 3), al.size(records_filtrado), num_surveys, num_census, get_first_last_info(records_retorno, "req_3")
+    end_time = get_time()
+    time = delta_time(star_time, end_time)
+    return round(time, 3), al.size(records_filtrado), num_surveys, num_census, get_first_last_info(records_retorno, "req_3")
 
-def req_4_consultar_registros_por_producto_y_rango(catalog, tipo_producto, año_inicio, año_fin):
+def req_4(catalog, tipo_producto, anio_inicio, anio_fin):
+    """
+    Retorna el resultado del requerimiento 5
+    """
     start_time = get_time()
-    registros_filtrados = filtrar_por_producto(catalog['agricultural_records'], tipo_producto)
-    registros_filtrados = filtrar_por_año(registros_filtrados, año_inicio, año_fin)
-    def sort_by_load_time_desc(record1, record2):
-        return datetime.strptime(record1['load_time'], "%Y-%m-%d %H:%M:%S") > datetime.strptime(record2['load_time'], "%Y-%m-%d %H:%M:%S")
-    registros_filtrados = al.quick_sort(registros_filtrados, sort_by_load_time_desc)
-    if al.size(registros_filtrados) > 20:
-        registros_filtrados = get_first_last_info(registros_filtrados, 'req_4')
-    survey_count = 0
-    census_count = 0
-    for registro in iterator(registros_filtrados):
+    records = catalog['agricultural_records']
+    records_lista = sc.value_set(records)
+    records_filtrado = filtrar_por_producto(records_lista, tipo_producto)
+    records_filtrado = filtrar_por_año(records_filtrado, anio_inicio, anio_fin)
+    num_surveys = 0
+    num_census = 0
+    for registro in iterator(records_filtrado):
         if registro['source'] == 'SURVEY':
             survey_count += 1
         elif registro['source'] == 'CENSUS':
             census_count += 1
+    records_retorno = al.quick_sort(records_filtrado, sort_criteria_1)    
     end_time = get_time()
     tiempo_total = delta_time(start_time, end_time)
-    return {
-        'total_registros': al.size(registros_filtrados),
-        'registros_por_fuente': {
-            'SURVEY': survey_count,
-            'CENSUS': census_count
-        },
-        'tiempo_total': tiempo_total,
-        'registros': registros_filtrados
-    }
-
+    return round(tiempo_total, 3), al.size(records_filtrado), num_surveys, num_census, get_first_last_info(records_retorno, "req_4")
 
 def req_5(catalog):
     """
@@ -319,72 +311,16 @@ def req_6(catalog):
     pass
 
 
-def req_7_analizar_ingresos_por_departamento(catalog, departamento, año_inicio, año_fin, orden):
-    start_time = get_time()
-    registros_filtrados = filtrar_por_departamento(catalog['agricultural_records'], departamento)
-    registros_filtrados = filtrar_por_año(registros_filtrados, año_inicio, año_fin)
-    lista_final = al.new_list()
-    for registro in iterator(registros_filtrados):
-        if 'unit_measurement' in registro and "$" in registro['unit_measurement']:
-            if registro['value'] not in ["(D)", None]:
-                al.add_last(lista_final, registro)
-    mapa_ingresos = {}  
-    for registro in iterator(lista_final):
-        año = registro['year_collection']
-        try:
-            valor = float(registro['value']) if isinstance(registro['value'], str) and registro['value'].replace('.', '', 1).isdigit() else 0
-        except:
-            valor = 0  
-        if año not in mapa_ingresos:
-            mapa_ingresos[año] = {'ingreso_total': 0, 'cantidad_registros': 0}
-        mapa_ingresos[año]['ingreso_total'] += valor
-        mapa_ingresos[año]['cantidad_registros'] += 1
-    ingresos_list = al.new_list()
-    for año, data in mapa_ingresos.items():
-        al.add_last(ingresos_list, {
-            'year_collection': año,
-            'ingreso_total': data['ingreso_total'],
-            'cantidad_registros': data['cantidad_registros']
-        })
-    if orden == 'ascendente':
-        ingresos_ordenados = al.merge_sort(ingresos_list, lambda x, y: 
-            (x['ingreso_total'], -x['cantidad_registros']) < (y['ingreso_total'], -y['cantidad_registros'])
-        )
-    else:
-        ingresos_ordenados = al.merge_sort(ingresos_list, lambda x, y: 
-            (x['ingreso_total'], -x['cantidad_registros']) > (y['ingreso_total'], -y['cantidad_registros'])
-        )
-    total_registros = al.size(ingresos_ordenados)
-    registros_filtrados_ordenados = get_first_last_info(ingresos_ordenados, None) if total_registros > 15 else ingresos_ordenados
-    count_invalidos = 0
-    count_survey = 0
-    count_census = 0
-    for registro in iterator(lista_final): 
-        if registro.get('source') == 'SURVEY':
-            count_survey += 1
-        elif registro.get('source') == 'CENSUS':
-            count_census += 1
-        if registro['value'] in ["(D)", None] or 'ingreso_total' in registro and (registro['ingreso_total'] is None or registro['ingreso_total'] <= 0):
-            count_invalidos += 1
-    max_ingreso = max(iterator(registros_filtrados_ordenados), key=lambda r: r['ingreso_total'], default=None)
-    min_ingreso = min(iterator(registros_filtrados_ordenados), key=lambda r: r['ingreso_total'], default=None)
-    for registro in iterator(registros_filtrados_ordenados):
-        if max_ingreso and registro['year_collection'] == max_ingreso['year_collection']:
-            registro['indicación'] = "MAYOR"
-        elif min_ingreso and registro['year_collection'] == min_ingreso['year_collection']:
-            registro['indicación'] = "MENOR"
-        else:
-            registro['indicación'] = ""
+def req_7_analizar_ingresos_por_departamento(catalog, departamento, anio_inicial, anio_final, tipo_ordenamiento):
+    star_time = get_time()
+    records = catalog['agricultural_records']
+    records_lista = sc.value_set(records)
+    records_filtrado = filtrar_por_departamento(records_filtrado, departamento)
+    records_filtrado = filtrar_por_año(records_lista, anio_inicial, anio_final)
+    
     end_time = get_time()
-    execution_time = delta_time(start_time, end_time)
-    return {
-        'Tiempo de ejecución (ms)': round(execution_time, 3),
-        'Total de registros encontrados': total_registros,
-        'Total de registros con fuente "SURVEY"': count_survey,
-        'Total de registros con fuente "CENSUS"': count_census,
-        'Total de registros inválidos con "$"': count_invalidos,
-        'Ingresos por año': registros_filtrados_ordenados
-    }
+    time = delta_time(star_time, end_time)
+    return round(time, 3), al.size(records_filtrado), 
 
 
 def req_8_analizar_tiempos_de_carga(catalog, N, orden):
