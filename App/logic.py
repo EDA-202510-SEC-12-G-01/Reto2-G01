@@ -67,16 +67,33 @@ def get_max_year(catalog):
     return lowest
 
 def sort_criteria_1(element_1, element_2):
-    is_sorted = False
+    condition = False
     fecha_element_1 = datetime.strptime(element_1['load_time'], '%Y-%m-%d %H:%M:%S')
     fecha_element_2 = datetime.strptime(element_2['load_time'], '%Y-%m-%d %H:%M:%S')
     if fecha_element_1 > fecha_element_2:
-        is_sorted = True
+        condition = True
     if fecha_element_1 == fecha_element_2:
-        if element_1['state_name'] <= element_2['state_name']:
-            is_sorted = True
-    return is_sorted
+        if element_1['state_name'] < element_2['state_name']:
+            condition = True
+    return condition
 
+def sort_criteria_2(element_1, element_2):
+    condition = False
+    if element_1['income'] > element_2['income']:
+        condition = True
+    elif element_1['income'] == element_2['income']:
+        if element_1['year_collection'] > element_2['year_collection']:
+            condition = True
+    return condition
+
+def sort_criteria_3(element_1, element_2):
+    condition = False
+    if element_1['income'] < element_2['income']:
+        condition = True
+    elif element_1['income'] == element_2['income']:
+        if element_1['year_collection'] > element_2['year_collection']:
+            condition = True
+    return condition
 
 def extract_info(record, requerimiento):
     if requerimiento == "carga_datos":
@@ -154,9 +171,11 @@ def extract_info(record, requerimiento):
             'unit_measurement': record['unit_measurement'],
             'commodity': record['commodity']
         }
+    elif requerimiento == "req_7":
+        return record
     return record
             
-def get_first_last_info(records_list, requerimiento):
+def get_first_last_info(records_list, requerimiento, num = 20):
     """
     Retorna una nueva lista (del mismo tipo que la original) que contiene los primeros 5 y 
     los últimos 5 registros con la siguiente información:
@@ -172,7 +191,7 @@ def get_first_last_info(records_list, requerimiento):
     total = al.size(records_list)
     new_list_ret = al.new_list()
             
-    if total <= 20:
+    if total <= num:
         for i in range(total):
             rec = al.get_element(records_list, i)
             al.add_last(new_list_ret, extract_info(rec, requerimiento))
@@ -258,7 +277,6 @@ def req_2(catalog):
     # TODO: Modificar el requerimiento 2
     pass
 
-
 def req_3(catalog, departamento, anio_inicial, anio_final):
     """
     Retorna el resultado del requerimiento 3
@@ -333,7 +351,7 @@ def req_6(catalog, departamento_interes, fecha_inicio, fecha_fin):
     return round(time, 3), al.size(records_filtrado), num_surveys, num_census, get_first_last_info(records_retorno, "req_6")
 
 
-def req_7_analizar_ingresos_por_departamento(catalog, departamento, anio_inicial, anio_final, tipo_ordenamiento):
+def req_7(catalog, departamento, anio_inicial, anio_final, tipo_ordenamiento):
     """
     Retorna el resultado del requerimiento 7
     """
@@ -341,31 +359,61 @@ def req_7_analizar_ingresos_por_departamento(catalog, departamento, anio_inicial
     star_time = get_time()
     records = catalog['agricultural_records']
     records_lista = sc.value_set(records)
-    records_filtrado = filtrar_por_departamento(records_filtrado, departamento)
     records_filtrado = filtrar_por_año(records_lista, anio_inicial, anio_final)
+    records_filtrado = filtrar_por_departamento(records_filtrado, departamento)
     records_filtrado = filtrar_por_unidad_de_medida(records_filtrado)
-    #TODO Completar Requerimiento 7
+    """
+    Registros filtrados por un intervalo de años y por departamento
+    
+    Además, se filtran los registros que en su unidad de medida contienen el símbolo "$"
+    (Que se indica en el enunciado que son los unicos que se deben considerar)
+    
+    Además, se consideran validos los value que usa "," como separador de miles y "." como separador decimal.
+    Solo se considera inválido los value con caracteres string que no se pueden convertir a float.sss
+    """
+    records_retorno = al.new_list()
+    for i in range(anio_final - anio_inicial + 1):
+        dictionario = {
+            'year_collection': anio_inicial + i,
+            'period_type': "N/A",
+            'income': 0,
+            'count': 0,
+            'invalid': 0,
+            'survey': 0,
+            'census': 0,
+        }
+        al.add_last(records_retorno, dictionario) 
+    for record in iterator(records_filtrado):
+        for i in range(anio_final - anio_inicial + 1):
+            if record['year_collection'] == anio_inicial + i:
+                al.get_element(records_retorno, i)['count'] += 1
+                if record['source'] == 'SURVEY':
+                    al.get_element(records_retorno, i)['survey'] += 1
+                elif record['source'] == 'CENSUS':
+                    al.get_element(records_retorno, i)['census'] += 1
+                try:
+                    al.get_element(records_retorno, i)['income'] += float(record['value'].replace(",", "").strip())
+                except:
+                    al.get_element(records_retorno, i)['invalid'] += 1              
+    if tipo_ordenamiento == 'ASCENDENTE':
+        records_retorno = al.merge_sort(records_retorno, sort_criteria_3)
+        al.first_element(records_retorno)['period_type'] = "MENOR"
+        al.last_element(records_retorno)['period_type'] = "MAYOR"
+    elif tipo_ordenamiento == 'DESCENDENTE':
+        records_retorno = al.merge_sort(records_retorno, sort_criteria_2)    
+        al.first_element(records_retorno)['period_type'] = "MAYOR"
+        al.last_element(records_retorno)['period_type'] = "MENOR"
     end_time = get_time()
     time = delta_time(star_time, end_time)
-    return round(time, 3), al.size(records_filtrado), 
-
+    return round(time, 3), al.size(records_filtrado), get_first_last_info(records_retorno, "req_7", 15)
 
 def req_8_analizar_tiempos_de_carga(catalog, N, orden):
-    # Asegurando que N sea un entero
-    N = int(N)
-    # Inicia el conteo del tiempo de ejecución
-    start_time = get_time()
-    # Extrae los registros agrícolas
-    records = catalog['agricultural_records']
-    records_lista = sc.value_set(records)  # Convierte a una lista de ArrayList
-    # Filtra los registros válidos (que no sean 'D' en la unidad de medición)
+    start_time = get_time() 
     registros_validos = al.new_list()
-    for record in iterator(records_lista):
+    for record in iterator(catalog['agricultural_records']):
         if record['unit_measurement'] != 'D': 
             al.add_last(registros_validos, record)
-    # Inicializa una lista de departamentos
     departamentos = al.new_list()
-    # Procesa los registros válidos para obtener la información de cada departamento
     for record in iterator(registros_validos):
         dep_info = {
             'state_name': record['state_name'],
@@ -379,13 +427,7 @@ def req_8_analizar_tiempos_de_carga(catalog, N, orden):
             'survey_count': 0,
             'census_count': 0
         }
-        # Verifica si el departamento ya existe en la lista
-        dep_found = -1
-        for i, dep in enumerate(iterator(departamentos)):
-            if dep['state_name'] == dep_info['state_name']:
-                dep_found = i
-                break
-
+        dep_found = al.is_present(departamentos, dep_info, al.default_function)
         if dep_found == -1:
             al.add_last(departamentos, dep_info)
         else:
@@ -400,7 +442,6 @@ def req_8_analizar_tiempos_de_carga(catalog, N, orden):
                 dep['survey_count'] += 1
             if record['source'] == 'CENSUS':
                 dep['census_count'] += 1
-    # Calcula el tiempo promedio de carga por departamento
     for dep in iterator(departamentos):
         total_time = 0
         count = 0
@@ -409,7 +450,6 @@ def req_8_analizar_tiempos_de_carga(catalog, N, orden):
                 total_time += (record['year_collection'] - int(record['load_time'][:4])) 
                 count += 1
         dep['promedio_tiempo'] = total_time / count if count > 0 else 0
-    # Ordena los departamentos según el promedio de tiempo de carga
     departamentos_ordenados = al.new_list()
     for dep in iterator(departamentos):
         al.add_last(departamentos_ordenados, dep)
@@ -417,19 +457,15 @@ def req_8_analizar_tiempos_de_carga(catalog, N, orden):
         departamentos_ordenados = al.merge_sort(departamentos_ordenados, lambda a, b: a['promedio_tiempo'] < b['promedio_tiempo'])
     else:
         departamentos_ordenados = al.merge_sort(departamentos_ordenados, lambda a, b: a['promedio_tiempo'] > b['promedio_tiempo'])
-    # Si hay más de 15 departamentos, recorta la lista a los primeros N y últimos N
     total_departamentos = al.size(departamentos_ordenados)
     if total_departamentos > 15:
         departamentos_ordenados = al.sub_list(departamentos_ordenados, 0, N)
         departamentos_ordenados = al.add_last(departamentos_ordenados, al.sub_list(departamentos_ordenados, total_departamentos - N, total_departamentos))
-    # Calcula el tiempo promedio total
     count_departamentos = al.size(departamentos_ordenados)
     tiempo_total = sum([dep['promedio_tiempo'] for dep in iterator(departamentos_ordenados)])
     tiempo_promedio_total = tiempo_total / count_departamentos if count_departamentos > 0 else 0
-    # Obtiene el menor y mayor año de recopilación
     menor_año = min([dep['min_year'] for dep in iterator(departamentos_ordenados)], default=float('inf'))
     mayor_año = max([dep['max_year'] for dep in iterator(departamentos_ordenados)], default=float('-inf'))
-    # Crea el diccionario de resultados
     resultado = {
         'Tiempo de ejecución (ms)': round(delta_time(start_time, get_time()), 3),
         'Número total de departamentos': count_departamentos,
@@ -440,7 +476,6 @@ def req_8_analizar_tiempos_de_carga(catalog, N, orden):
         'Total "SURVEY"': sum([dep['survey_count'] for dep in iterator(departamentos_ordenados)]),
         'Total "CENSUS"': sum([dep['census_count'] for dep in iterator(departamentos_ordenados)]),
     }
-    # Añade los detalles de cada departamento al resultado
     for dep in iterator(departamentos_ordenados):
         dep_info = {
             'Departamento': dep['state_name'],
@@ -455,9 +490,6 @@ def req_8_analizar_tiempos_de_carga(catalog, N, orden):
         }
         resultado['Departamentos'].append(dep_info)
     return resultado
-
-
-
 
 # Funciones para medir tiempos de ejecucion
 def get_time():
